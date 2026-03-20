@@ -1,93 +1,124 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import signal
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import ttk
+from signals import compute_signal as compute_signal_func
 
-root = tk.Tk() #hide main window
-root.withdraw()   
+def update_scales(event=None):
+    try:
+        new_length = param_frame.winfo_width() - 300
+        for child in param_frame.winfo_children():
+            if isinstance(child, tk.Scale):
+                child.config(length=max(200, new_length))
+    except:
+        pass
 
-def get_user_data():
-    dialog = tk.Toplevel(root)
-    dialog.title("Enter Data")
-    
-    def validate_numeric(text):
-        if text == "":
-            return True
-        try:
-            float(text)
-            return True
-        except ValueError:
-            return False
-    
-    def validate_alpha(text):
-        return all(c.isalpha() or c.isspace() for c in text) or text == ""
-    
-    vcmd_numeric = (dialog.register(validate_numeric), '%P')
-    vcmd_alpha = (dialog.register(validate_alpha), '%P')
-    
-    # Name field
-    tk.Label(dialog, text="Name:").grid(row=0, column=0)
-    name_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_alpha)
-    name_entry.grid(row=0, column=1)
-    
-    # a fields
-    tk.Label(dialog, text="a[0]:").grid(row=1, column=0)
-    a0_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    a0_entry.grid(row=1, column=1)
-    tk.Label(dialog, text="a[1]:").grid(row=2, column=0)
-    a1_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    a1_entry.grid(row=2, column=1)
-    
-    # b fields
-    tk.Label(dialog, text="b[0]:").grid(row=3, column=0)
-    b0_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    b0_entry.grid(row=3, column=1)
-    tk.Label(dialog, text="b[1]:").grid(row=4, column=0)
-    b1_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    b1_entry.grid(row=4, column=1)
-    tk.Label(dialog, text="b[2]:").grid(row=5, column=0)
-    b2_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    b2_entry.grid(row=5, column=1)
-    
-    # PD fields
-    tk.Label(dialog, text="PD[0]:").grid(row=6, column=0)
-    pd0_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    pd0_entry.grid(row=6, column=1)
-    tk.Label(dialog, text="PD[1]:").grid(row=7, column=0)
-    pd1_entry = tk.Entry(dialog, validate="key", validatecommand=vcmd_numeric)
-    pd1_entry.grid(row=7, column=1)
-    
-    def submit():
-        global user_input, a, b, PD
-        user_input = name_entry.get()
-        try:
-            a = [float(a0_entry.get()), float(a1_entry.get())]
-        except ValueError:
-            a = [1, 1]
-        try:
-            b = [float(b0_entry.get()), float(b1_entry.get()), float(b2_entry.get())]
-        except ValueError:
-            b = [1, 1, 1]
-        try:
-            PD = [float(pd0_entry.get()), float(pd1_entry.get())]
-        except ValueError:
-            PD = [1, 1]
-        dialog.destroy()
-    
-    tk.Button(dialog, text="Submit", command=submit).grid(row=8, column=0, columnspan=2)
-    dialog.wait_window()
+def validate_float(P):
+    if P == "":
+        return True
+    try:
+        float(P)
+        return True
+    except ValueError:
+        return False
 
-get_user_data()
+def compute_signal():
+    try:
+        a0 = float(entry_a0.get())
+        a1 = float(entry_a1.get())
+        b0 = float(entry_b0.get())
+        b1 = float(entry_b1.get())
+        b2 = float(entry_b2.get())
+        kp = float(entry_kp.get())
+        Tf = float(entry_Tf.get())
+        kd = float(entry_kd.get())
+        A = float(entry_A.get())  # Amplituda
+        T = float(entry_T.get())  # Czas trwania / okres
+        w = float(entry_w.get())  # Częstotliwość
+        signal_choice = signal_var.get().lower()
 
-if user_input:
-    print(f"Hello, {user_input}!")
-else:
-    print("Cancelled or nothing entered.")
+        result_str = compute_signal_func(a0, a1, b0, b1, b2, kp, Tf, kd, A, T, w, signal_choice)
+        result.set(result_str)
+    except ValueError:
+        result.set("Please enter valid numbers for all parameters.")
 
+# Create main window
+root = tk.Tk()
+root.title("Signal Calculator")
 
-# Your variables a, b, PD...
+# Set window to 1/2 width and 3/4 height of screen for better visibility
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+width = screen_width // 2
+height = screen_height * 3 // 4
+root.geometry(f"{width}x{height}")
 
-print(f"Name retrieved: {user_input}") # Check in terminal if it works
-print(f"Retrieved values: a={a}, b={b}, PD={PD}")
+root.resizable(True, True)
+
+vcmd = (root.register(validate_float), '%P')
+
+# Main frame
+main_frame = ttk.Frame(root, padding="10")
+main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+root.columnconfigure(0, weight=1)
+root.rowconfigure(0, weight=1)
+
+# Variables
+entry_a0 = tk.DoubleVar(value=1)
+entry_a1 = tk.DoubleVar(value=1)
+entry_b0 = tk.DoubleVar(value=1)
+entry_b1 = tk.DoubleVar(value=1)
+entry_b2 = tk.DoubleVar(value=1)
+entry_kp = tk.DoubleVar(value=1)
+entry_Tf = tk.DoubleVar(value=1)
+entry_kd = tk.DoubleVar(value=1)
+entry_A = tk.DoubleVar(value=1)
+entry_T = tk.DoubleVar(value=5)
+entry_w = tk.DoubleVar(value=1)
+signal_var = tk.StringVar(value="square")
+result = tk.StringVar()
+
+# Parameters frame
+param_frame = ttk.Frame(main_frame, padding="5")
+param_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+param_frame.columnconfigure(2, weight=1)
+
+params = [
+    ("a0", entry_a0),
+    ("a1", entry_a1),
+    ("b0", entry_b0),
+    ("b1", entry_b1),
+    ("b2", entry_b2),
+    ("kp", entry_kp),
+    ("Tf", entry_Tf),
+    ("kd", entry_kd),
+    ("A (amplitude)", entry_A),
+    ("T (time/period)", entry_T),
+    ("w (frequency)", entry_w),
+]
+
+# Calculate scale length based on window width
+scale_length = max(200, width - 300)
+
+# Create labels, entries, and scales in a loop
+for i, (name, var) in enumerate(params):
+    ttk.Label(param_frame, text=f"{name}:").grid(row=i, column=0, sticky=tk.W, padx=5, pady=2)
+    ttk.Entry(param_frame, textvariable=var, validate="key", validatecommand=vcmd).grid(row=i, column=1, padx=5, pady=2)
+    tk.Scale(param_frame, from_=0.1, to=50, resolution=0.1, orient=tk.HORIZONTAL, variable=var, length=scale_length).grid(row=i, column=2, sticky=(tk.W, tk.E), padx=5, pady=2)
+
+# Bind resize event to update scales
+root.bind('<Configure>', update_scales)
+
+# Controls frame
+control_frame = ttk.Frame(main_frame, padding="5")
+control_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+
+ttk.Label(control_frame, text="Signal type:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+ttk.Combobox(control_frame, textvariable=signal_var, values=["square", "sin", "triangle"], state="readonly").grid(row=0, column=1, padx=5, pady=2)
+ttk.Button(control_frame, text="Compute", command=compute_signal).grid(row=0, column=2, padx=5, pady=2)
+
+# Result frame
+result_frame = ttk.Frame(main_frame, padding="5")
+result_frame.grid(row=2, column=0, sticky=(tk.W, tk.E))
+
+ttk.Label(result_frame, textvariable=result, wraplength=800).grid(row=0, column=0, padx=5, pady=2)
+
 root.mainloop()
